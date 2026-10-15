@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>书循环 · 本校二手教材教辅交易平台</title>
+<link rel="stylesheet" href="https://unpkg.com/element-plus@2.8.8/dist/index.css">
+<style>
+:root{
+  --bg:#eef1ec; --surf:#fff; --ink:#22312a; --mut:#68776e; --bord:#e2e7e0;
+  --brand:#178a4c; --brand-soft:#e7f6ed;
+  --el-color-primary:#178a4c;
+  --el-color-primary-light-3:#3ba26c; --el-color-primary-light-5:#6cb990;
+  --el-color-primary-light-7:#a5d5bb; --el-color-primary-light-8:#c9e6d7;
+  --el-color-primary-light-9:#e7f6ed;  --el-color-primary-dark-2:#0f6b3a;
+}
+*{box-sizing:border-box}
+[v-cloak]{display:none}
+body{margin:0;font-family:system-ui,"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
+a{color:var(--brand)}
+.wrap{max-width:1020px;margin:0 auto;padding:0 20px}
+/* 顶部导航 */
+.navbar{background:var(--surf);border-bottom:1px solid var(--bord);position:sticky;top:0;z-index:10}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:60px;gap:10px}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);flex:none}
+.mark{width:32px;height:32px;border-radius:9px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center}
+.b-name{font-weight:600;font-size:17px}
+.b-sub{font-size:12px;color:var(--mut);border-left:1px solid var(--bord);padding-left:9px}
+.nav-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.uchip{display:flex;align-items:center;gap:7px;font-weight:500;padding:0 6px}
+.uava{width:26px;height:26px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+/* 首页 */
+.hero{background:linear-gradient(160deg,var(--brand-soft),var(--surf));border:1px solid var(--bord);border-radius:16px;padding:46px 40px;margin-top:24px;text-align:center}
+.hero h1{margin:0 0 10px;font-size:30px;letter-spacing:.5px}
+.hero-sub{color:var(--mut);margin:0 0 22px}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+.flow-step{background:var(--surf);border:1px solid var(--bord);border-radius:13px;padding:16px;text-align:center}
+.fic{width:38px;height:38px;margin:0 auto 8px;border-radius:11px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
+.flow-step b{display:block;font-weight:600}
+.flow-step span{font-size:12px;color:var(--mut)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 40px}
+.panel{background:var(--surf);border:1px solid var(--bord);border-radius:13px;padding:18px 20px}
+.panel h3{margin:0 0 10px;font-size:15px}
+.panel ul,.panel ol{margin:0;padding-left:18px;color:var(--mut)}
+.panel li{margin:5px 0}
+/* 登录/注册/发布 */
+.auth-wrap{display:flex;justify-content:center;padding:48px 0 60px}
+.auth-card{background:var(--surf);border:1px solid var(--bord);border-radius:16px;padding:30px 32px;width:min(420px,100%)}
+.auth-card h2{margin:0 0 4px;font-size:20px}
+.auth-sub{color:var(--mut);margin:0 0 18px;font-size:13px}
+.block{width:100%;margin-top:6px}
+.alt{text-align:center;color:var(--mut);font-size:13px;margin:16px 0 0}
+.hint{font-size:12px;color:var(--mut)}
+.publish-card{background:var(--surf);border:1px solid var(--bord);border-radius:16px;padding:26px 28px;width:min(560px,100%);margin:24px auto 48px}
+.publish-card h2{margin:0 0 4px;font-size:20px}
+/* 我的发布 */
+.page-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:24px 0 14px}
+.page-head h2{margin:0;font-size:20px}
+/* 书市 */
+.market-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:24px 0 12px;flex-wrap:wrap}
+.market-head h2{margin:0;font-size:20px}
+.search-bar{display:flex;gap:8px;flex:1;max-width:440px}
+.mk-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.chips-row{display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:0}
+.chip-btn{border:1px solid var(--bord);background:var(--surf);color:var(--ink);border-radius:999px;padding:4px 13px;font-size:13px;cursor:pointer}
+.chip-btn:hover{border-color:var(--brand)}
+.chip-btn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.mk-meta{color:var(--mut);font-size:12.5px;margin-bottom:10px}
+.mk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:40px}
+.mk-card{background:var(--surf);border:1px solid var(--bord);border-radius:13px;overflow:hidden;cursor:pointer;transition:box-shadow .15s}
+.mk-card:hover{box-shadow:0 4px 16px rgba(23,138,76,.13)}
+.mk-card img{width:100%;height:150px;object-fit:cover;display:block;background:var(--brand-soft)}
+.mkc-body{padding:11px 13px 13px}
+.mkc-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mkc-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0;color:var(--mut);font-size:12.5px}
+.mkc-foot{display:flex;justify-content:space-between;align-items:baseline}
+/* 详情页 */
+.detail-back{margin:18px 0 10px}
+.detail-card{display:flex;gap:24px;background:var(--surf);border:1px solid var(--bord);border-radius:16px;padding:24px;margin-bottom:40px;flex-wrap:wrap}
+.detail-img{width:min(340px,100%);height:auto;max-height:420px;object-fit:cover;border-radius:12px;background:var(--brand-soft);flex:none}
+.detail-info{flex:1;min-width:260px}
+.detail-info h2{margin:0 0 6px;font-size:22px}
+.d-price{font-size:26px;font-weight:700;color:var(--brand);margin:8px 0}
+.d-row{margin:7px 0;color:var(--mut);font-size:13.5px}
+.d-row b{color:var(--ink);font-weight:500}
+.d-wechat{display:flex;align-items:center;gap:10px;background:var(--brand-soft);border:1px dashed var(--brand);border-radius:11px;padding:11px 14px;margin:14px 0}
+.d-wechat b{font-size:15px;letter-spacing:.3px}
+.d-seller{display:flex;align-items:center;gap:9px;margin:14px 0 4px}
+.detail-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+/* 状态盒（书市/详情共用 .state-box） */
+.book-list{display:grid;gap:12px;margin-bottom:40px}
+.book-card{display:flex;gap:14px;background:var(--surf);border:1px solid var(--bord);border-radius:13px;padding:14px;align-items:center;flex-wrap:wrap}
+.book-cover{width:74px;height:100px;border-radius:8px;object-fit:cover;background:var(--brand-soft);flex:none}
+.b-info{flex:1;min-width:200px}
+.b-name{font-weight:600;font-size:15px}
+.b-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;color:var(--mut);font-size:12.5px}
+.b-course{background:var(--brand-soft);color:var(--brand);border-radius:6px;padding:1px 8px}
+.b-price{color:var(--brand);font-weight:600;font-size:16px}
+.b-actions{display:flex;gap:8px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.state-box{background:var(--surf);border:1px dashed var(--bord);border-radius:13px;padding:44px 20px;text-align:center;color:var(--mut);display:grid;justify-items:center;gap:12px;margin-bottom:40px}
+.state-box.error{border-color:#f0c8c8;color:#b42318;background:#fdf6f6}
+/* 页脚 */
+.foot{border-top:1px solid var(--bord);background:var(--surf)}
+.foot-inner{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:16px 20px;color:var(--mut);font-size:12px;max-width:1020px;margin:0 auto}
+@media (max-width:760px){
+  .flow{grid-template-columns:repeat(2,1fr)}
+  .grid2{grid-template-columns:1fr}
+  .b-sub{display:none}
+  .hero{padding:32px 20px}
+  .hero h1{font-size:24px}
+  .publish-card{padding:20px}
+}
+</style>
+</head>
+<body>
+<div id="startup-notice" role="status" hidden style="padding:12px 20px;background:#fff3cd;color:#664d03;text-align:center"></div>
+<div id="app" v-cloak>
+
+  <header class="navbar">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#" @click.prevent="go('home')">
+        <span class="mark"><el-icon :size="18"><reading></reading></el-icon></span>
+        <span class="b-name">书循环</span>
+        <span class="b-sub">本校二手教材教辅交易平台</span>
+      </a>
+      <div class="nav-right">
+        <el-button text @click="go('market')">书市</el-button>
+        <template v-if="user">
+          <el-button text @click="go('mybooks')">我的发布</el-button>
+          <el-button type="primary" @click="go('publish')">发布教材</el-button>
+          <span class="uchip"><span class="uava">{{ user.username.slice(0,1).toUpperCase() }}</span>{{ user.username }}</span>
+          <el-button text @click="logout">退出登录</el-button>
+        </template>
+        <template v-else>
+          <el-button text @click="go('login')">登录</el-button>
+          <el-button type="primary" @click="go('register')">免费注册</el-button>
+        </template>
+      </div>
+    </div>
+  </header>
+
+  <!-- 首页 -->
+  <main class="wrap" v-if="view==='home'">
+    <section class="hero">
+      <template v-if="!user">
+        <h1>让闲置教材，流转到下一届同学手中</h1>
+        <p class="hero-sub">面向本校学生的二手教材教辅信息撮合平台 · 微信议价 · 校园面交 · 线下钱款交割</p>
+        <div class="hero-cta">
+          <el-button type="primary" size="large" @click="go('register')">免费注册，开始使用</el-button>
+          <el-button size="large" @click="go('market')">先去书市逛逛</el-button>
+        </div>
+      </template>
+      <template v-else>
+        <h1>你好，{{ user.username }}</h1>
+        <p class="hero-sub">学期末有闲置教材？挂上书市，让下一届同学接手。</p>
+        <div class="hero-cta">
+          <el-button type="primary" size="large" @click="go('publish')">发布教材</el-button>
+          <el-button size="large" @click="go('mybooks')">管理我的发布</el-button>
+        </div>
+      </template>
+    </section>
+
+    <section class="flow">
+      <div class="flow-step" v-for="s in flowSteps" :key="s.t">
+        <div class="fic"><el-icon :size="19"><component :is="s.icon"></component></el-icon></div>
+        <b>{{ s.t }}</b><span>{{ s.d }}</span>
+      </div>
+    </section>
+
+    <section class="grid2">
+      <div class="panel">
+        <h3>平台规则（边界）</h3>
+        <ul>
+          <li>仅限教材教辅类书籍，其他商品会被举报下架</li>
+          <li>仅支持校园线下面交，不支持邮寄</li>
+          <li>平台不介入资金：钱款由买卖双方当面结清</li>
+          <li>议价沟通在微信完成，平台展示卖家微信号</li>
+          <li>交易纠纷由买卖双方自行协商承担</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>交易流程</h3>
+        <ol>
+          <li>卖家发布教材：实拍图 + 绑定课程 + 标价</li>
+          <li>买家按课程浏览 / 关键词检索，收藏或联系卖家</li>
+          <li>双方查看微信号，在微信上议价、约定面交地点</li>
+          <li>买家在平台提交订单登记，线下当面验书付款</li>
+          <li>买家回平台确认订单完成</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <!-- 登录 -->
+  <main class="wrap auth-wrap" v-else-if="view==='login'">
+    <div class="auth-card">
+      <h2>登录</h2>
+      <p class="auth-sub">使用注册时的用户名和密码</p>
+      <el-form label-position="top" @submit.prevent="doLogin">
+        <el-form-item label="用户名">
+          <el-input v-model="loginForm.username" placeholder="2-20 位用户名" maxlength="20" clearable></el-input>
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="loginForm.password" type="password" show-password placeholder="至少 6 位" @keyup.enter="doLogin"></el-input>
+        </el-form-item>
+        <el-button class="block" type="primary" native-type="submit" :loading="loginForm.loading">登 录</el-button>
+      </el-form>
+      <p class="alt">还没有账号？<a href="#" @click.prevent="go('register')">免费注册</a>　·　<a href="#" @click.prevent="go('home')">返回首页</a></p>
+    </div>
+  </main>
+
+  <!-- 注册 -->
+  <main class="wrap auth-wrap" v-else-if="view==='register'">
+    <div class="auth-card">
+      <h2>注册</h2>
+      <p class="auth-sub">注册后即可发布、购买二手教材</p>
+      <el-form label-position="top" @submit.prevent="doRegister">
+        <el-form-item label="用户名">
+          <el-input v-model="regForm.username" placeholder="2-20 位字符" maxlength="20" clearable></el-input>
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="regForm.password" type="password" show-password placeholder="至少 6 位"></el-input>
+        </el-form-item>
+        <el-form-item label="确认密码">
+          <el-input v-model="regForm.password2" type="password" show-password placeholder="再次输入密码" @keyup.enter="doRegister"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <template #label>微信号（选填）</template>
+          <el-input v-model="regForm.wechat" placeholder="作为卖家时展示给买家，便于联系" maxlength="50"></el-input>
+          <div class="hint">可在登录后随时补充</div>
+        </el-form-item>
+        <el-button class="block" type="primary" native-type="submit" :loading="regForm.loading">注 册</el-button>
+      </el-form>
+      <p class="alt">已有账号？<a href="#" @click.prevent="go('login')">去登录</a>　·　<a href="#" @click.prevent="go('home')">返回首页</a></p>
+    </div>
+  </main>
+
+  <!-- 发布教材 -->
+  <main class="wrap" v-else-if="view==='publish'">
+    <div class="publish-card">
+      <h2>发布二手教材</h2>
+      <p class="auth-sub">带 * 为必填项；发布后可在「我的发布」随时自主下架</p>
+      <el-form label-position="top" @submit.prevent="doPublish">
+        <el-form-item label="书名 *">
+          <el-input v-model="pub.book_name" maxlength="100" show-word-limit placeholder="如：高等数学（第七版）上册"></el-input>
+        </el-form-item>
+        <el-form-item label="所属课程 *">
+          <el-select v-model="pub.course_id" placeholder="选择课程，买家按课程找到这本书" style="width:100%" filterable :loading="coursesLoading">
+            <el-option v-for="c in courses" :key="c.course_id" :label="c.course_name" :value="c.course_id"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="售价（元）*">
+          <el-input-number v-model="pub.price" :min="0" :max="99999" :precision="2" :controls="false" style="width:100%" placeholder="0.00"></el-input-number>
+        </el-form-item>
+        <el-form-item>
+          <template #label>成色描述（选填）</template>
+          <el-input v-model="pub.quality_desc" maxlength="100" show-word-limit placeholder="如：八成新，前 3 章有少量铅笔笔记"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <template #label>教材实拍图 *（JPG / PNG / WebP，不超过 5MB）</template>
+          <el-upload
+            list-type="picture-card"
+            :auto-upload="false"
+            :limit="1"
+            accept="image/jpeg,image/png,image/webp"
+            v-model:file-list="pubFiles"
+            :on-change="onPicChange"
+            :on-remove="onPicRemove"
+            :on-exceed="onPicExceed">
+            <el-icon :size="20"><plus></plus></el-icon>
+          </el-upload>
+          <div class="hint">上传真实实拍图，盗图或非教材图片会被举报下架</div>
+        </el-form-item>
+        <el-button class="block" type="primary" native-type="submit" :loading="pub.loading">发 布</el-button>
+      </el-form>
+    </div>
+  </main>
+
+  <!-- 我的发布 -->
+  <main class="wrap" v-else-if="view==='mybooks'">
+    <div class="page-head">
+      <h2>我的发布</h2>
+      <el-button type="primary" @click="go('publish')">发布教材</el-button>
+    </div>
+
+    <div v-if="myState==='loading'" class="state-box"><el-icon class="is-loading" :size="22"><loading></loading></el-icon>加载中…</div>
+
+    <div v-else-if="myState==='error'" class="state-box error" role="alert">
+      <span>{{ myError }}</span>
+      <el-button type="primary" plain @click="loadMyBooks">重试</el-button>
+    </div>
+
+    <div v-else-if="myBooks.length===0" class="state-box">
+      <span>你还没有发布过教材</span>
+      <el-button type="primary" @click="go('publish')">发布第一本</el-button>
+    </div>
+
+    <div v-else class="book-list">
+      <div class="book-card" v-for="b in myBooks" :key="b.book_id">
+        <img class="book-cover" :src="b.pic_url" :alt="b.book_name + ' 实拍图'">
+        <div class="b-info">
+          <div class="b-name">{{ b.book_name }}</div>
+          <div class="b-meta">
+            <span class="b-course">{{ b.course_name }}</span>
+            <span class="b-price">¥{{ formatPrice(b.price) }}</span>
+            <span v-if="b.quality_desc">{{ b.quality_desc }}</span>
+          </div>
+          <div class="b-meta"><span>发布于 {{ b.created_at }}</span></div>
+        </div>
+        <div class="b-actions">
+          <el-tag :type="b.status==='上架' ? 'success' : 'info'">{{ b.status }}</el-tag>
+          <el-button v-if="b.status==='上架'" size="small" type="danger" plain @click="delistBook(b)">下架</el-button>
+          <el-button v-else size="small" type="success" plain @click="relistBook(b)">重新上架</el-button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 书市 -->
+  <main class="wrap" v-else-if="view==='market'">
+    <div class="market-head">
+      <h2>书市</h2>
+      <div class="search-bar">
+        <el-input v-model="mk.keyword" placeholder="输入书名关键词模糊检索，如：高等数学" clearable @keyup.enter="searchBooks" @clear="searchBooks"></el-input>
+        <el-button type="primary" @click="searchBooks">搜索</el-button>
+      </div>
+    </div>
+    <div class="mk-toolbar">
+      <div class="chips-row">
+        <button type="button" class="chip-btn" :class="{on: mk.course_id===0}" @click="setCourse(0)">全部课程</button>
+        <button type="button" class="chip-btn" v-for="c in courses" :key="c.course_id" :class="{on: mk.course_id===c.course_id}" @click="setCourse(c.course_id)">{{ c.course_name }}</button>
+      </div>
+      <el-select v-model="mk.sort" style="width:150px;flex:none" @change="loadMarket">
+        <el-option label="最新发布" value="time_desc"></el-option>
+        <el-option label="价格从低到高" value="price_asc"></el-option>
+        <el-option label="价格从高到低" value="price_desc"></el-option>
+      </el-select>
+    </div>
+
+    <div v-if="mkState==='loading'" class="state-box"><el-icon class="is-loading" :size="22"><loading></loading></el-icon>加载中…</div>
+    <div v-else-if="mkState==='error'" class="state-box error" role="alert">
+      <span>{{ mkError }}</span>
+      <el-button type="primary" plain @click="loadMarket">重试</el-button>
+    </div>
+    <div v-else-if="mkBooks.length===0" class="state-box">
+      <span>暂无匹配教材</span>
+      <el-button v-if="user" type="primary" @click="go('publish')">去发布</el-button>
+      <el-button v-else type="primary" @click="go('register')">注册后去发布</el-button>
+    </div>
+    <template v-else>
+      <div class="mk-meta">共 {{ mkTotal }} 本在售 · 点击卡片查看详情与卖家微信</div>
+      <div class="mk-grid">
+        <div class="mk-card" v-for="b in mkBooks" :key="b.book_id" @click="openDetail(b.book_id)">
+          <img :src="b.pic_url" :alt="b.book_name + ' 实拍图'">
+          <div class="mkc-body">
+            <div class="mkc-name">{{ b.book_name }}</div>
+            <div class="mkc-meta"><span class="b-course">{{ b.course_name }}</span><span v-if="b.quality_desc">{{ b.quality_desc }}</span></div>
+            <div class="mkc-foot"><span class="b-price">¥{{ formatPrice(b.price) }}</span><span class="mut small">卖家 {{ b.seller_name }}</span></div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </main>
+
+  <!-- 教材详情 -->
+  <main class="wrap" v-else-if="view==='detail'">
+    <div class="detail-back">
+      <el-button text @click="backToMarket">← 返回书市</el-button>
+    </div>
+    <div v-if="detail.state==='loading'" class="state-box"><el-icon class="is-loading" :size="22"><loading></loading></el-icon>加载中…</div>
+    <div v-else-if="detail.state==='error'" class="state-box error" role="alert">
+      <span>{{ detail.error }}</span>
+      <el-button type="primary" plain @click="backToMarket">返回书市</el-button>
+    </div>
+    <div v-else class="detail-card">
+      <img class="detail-img" :src="detail.book.pic_url" :alt="detail.book.book_name + ' 实拍图'">
+      <div class="detail-info">
+        <h2>{{ detail.book.book_name }}</h2>
+        <div class="d-price">¥{{ formatPrice(detail.book.price) }}</div>
+        <div class="d-row">所属课程：<b>{{ detail.book.course_name }}</b></div>
+        <div class="d-row">成色：<b>{{ detail.book.quality_desc || '卖家未填写' }}</b></div>
+        <div class="d-row">发布时间：{{ detail.book.created_at }}</div>
+        <el-tag v-if="detail.book.status==='下架'" type="info" style="margin-top:8px">已下架（仅自己可见）</el-tag>
+
+        <div class="d-seller">
+          <span class="uava" style="width:34px;height:34px">{{ detail.book.seller_name.slice(0,1).toUpperCase() }}</span>
+          <span>卖家 <b>{{ detail.book.seller_name }}</b></span>
+        </div>
+        <div class="d-wechat">
+          <template v-if="detail.book.seller_wechat">
+            <span>微信号</span><b>{{ detail.book.seller_wechat }}</b>
+            <el-button size="small" plain type="primary" @click="copyWechat">复制微信</el-button>
+          </template>
+          <template v-else><span class="mut">卖家未填写微信号，可通过书市其他方式联系</span></template>
+        </div>
+        <div class="hint" style="margin-bottom:4px">沟通议价请在微信完成；钱款在校园面交时当面结清，平台不做线上支付。</div>
+
+        <div class="detail-actions">
+          <el-button :type="detail.book.collected ? 'warning' : 'primary'" plain @click="toggleCollect">
+            {{ detail.book.collected ? '★ 已收藏' : '☆ 收藏' }}
+          </el-button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <div class="foot-inner">
+      <span>书循环 · 本校大学生二手教材教辅交易平台（需求文档 v1.1）</span>
+      <span>校园教材流转 · 微信沟通 · 线下面交</span>
+    </div>
+  </footer>
+
+</div>
+<script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/element-plus@2.8.8/dist/index.full.min.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+<script src="./js/config.js"></script>
+<script>
+if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue) {
+  const notice = document.getElementById('startup-notice');
+  notice.textContent = '前端依赖加载失败，请检查网络后刷新页面。';
+  notice.hidden = false;
+}
+</script>
+<script src="./js/app.js"></script>
+</body>
+</html>

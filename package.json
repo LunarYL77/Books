@@ -1,0 +1,13 @@
+{
+  "name": "campus-books",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev web",
+    "db:local": "wrangler d1 migrations apply campus-books --local",
+    "db:remote": "wrangler d1 migrations apply campus-books --remote",
+    "deploy": "wrangler pages deploy web --project-name campus-books",
+    "test": "node --test tests/*.test.js"
+  },
+  "devDependencies": { "wrangler": "^4.0.0" }
+}

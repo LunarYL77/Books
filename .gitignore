@@ -1,0 +1,13 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+
+# Local data and user uploads
+backend/*.db
+backend/*.db-*
+uploads/
+
+# Python cache files
+__pycache__/
+*.py[cod]

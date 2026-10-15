@@ -1,0 +1,10 @@
+name = "campus-books"
+pages_build_output_dir = "./web"
+compatibility_date = "2026-10-15"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "campus-books"
+# 创建 D1 后，将这里替换为真实 database_id。
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
