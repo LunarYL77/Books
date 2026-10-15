@@ -53,10 +53,16 @@ a{color:var(--brand)}
 .htab-primary span{color:rgba(255,255,255,.82)}
 .htab-primary .htab-ic{background:rgba(255,255,255,.22);color:#fff}
 .htab-primary:hover{box-shadow:0 12px 28px rgba(23,138,76,.36)}
-.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
-.flow-step{background:var(--surf);border:1px solid var(--bord);border-radius:13px;padding:16px;text-align:center}
-.fic{width:38px;height:38px;margin:0 auto 8px;border-radius:11px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
-.flow-step b{display:block;font-weight:600}
+/* 交易流程说明板（与上方可点击选项卡区分） */
+.flow-board{background:linear-gradient(180deg,#f4faf6,var(--surf));border:1px solid var(--bord);border-radius:16px;padding:20px 22px;margin-top:16px}
+.flow-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.flow-head h3{margin:0;font-size:15px}
+.flow-head p{margin:0;font-size:12.5px;color:var(--mut)}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.flow-step{position:relative;background:var(--surf);border:1px dashed #cfe3d7;border-radius:13px;padding:18px 12px 15px;text-align:center;cursor:default}
+.fnum{position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.fic{width:36px;height:36px;margin:2px auto 8px;border-radius:10px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
+.flow-step b{display:block;font-weight:600;font-size:14px}
 .flow-step span{font-size:12px;color:var(--mut)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 40px}
 .panel{background:var(--surf);border:1px solid var(--bord);border-radius:13px;padding:18px 20px}
@@ -202,10 +208,17 @@ a{color:var(--brand)}
       </div>
     </section>
 
-    <section class="flow">
-      <div class="flow-step" v-for="s in flowSteps" :key="s.t">
-        <div class="fic"><el-icon :size="19"><component :is="s.icon"></component></el-icon></div>
-        <b>{{ s.t }}</b><span>{{ s.d }}</span>
+    <section class="flow-board">
+      <div class="flow-head">
+        <h3>交易流程</h3>
+        <p>四步走完一本教材的流转（说明，非功能入口）</p>
+      </div>
+      <div class="flow">
+        <div class="flow-step" v-for="(s, i) in flowSteps" :key="s.t">
+          <div class="fnum">{{ i + 1 }}</div>
+          <div class="fic"><el-icon :size="19"><component :is="s.icon"></component></el-icon></div>
+          <b>{{ s.t }}</b><span>{{ s.d }}</span>
+        </div>
       </div>
     </section>
 
@@ -513,6 +526,6 @@ if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue) {
   notice.hidden = false;
 }
 </script>
-<script src="./js/app.js?v=5"></script>
+<script src="./js/app.js?v=6"></script>
 </body>
 </html>
