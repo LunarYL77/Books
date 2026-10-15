@@ -86,6 +86,61 @@ test('用户、图片、书市、收藏、权限与退出的完整流程', async
   assert.equal((await call('/auth/me', { token: seller.token })).status, 401);
   db.sql.close();
 });
+test('模块3：书市浏览（课程筛选/模糊检索/价格排序）与详情页（卖家微信/真实收藏）', async () => {
+  const db = database();
+  const call = client(db);
+  const register = username => call('/auth/register', { method: 'POST', body: { username, password: 'test-password', wechat: `wx_${username}` } });
+  const seller = (await register('alice')).data;
+  const buyer = (await register('bob')).data;
+  const bytes = new Uint8Array([137,80,78,71,13,10,26,10]);
+  const publish = async (book_name, price, course_id) => {
+    const form = new FormData();
+    for (const [key, value] of Object.entries({ book_name, price, course_id, quality_desc: '' })) form.set(key, value);
+    form.set('image', new Blob([bytes], { type: 'image/png' }), 'b.png');
+    const r = await call('/books', { method: 'POST', body: form, token: seller.token });
+    assert.equal(r.status, 200);
+    return r.data;
+  };
+  const gaoshuA = await publish('高等数学（上册）', 15.5, 1);   // 课程1
+  const gaoshuB = await publish('高等数学学习辅导', 8, 1);      // 课程1
+  const xianxing = await publish('线性代数', 20, 2);            // 课程2
+
+  // 未登录也可浏览书市（公开接口）
+  assert.equal((await call('/books')).status, 200);
+  // 课程筛选：只看指定课程
+  let r = await call('/books?course_id=1');
+  assert.equal(r.data.total, 2);
+  assert.ok(r.data.items.every(b => b.course_id === 1));
+  // 关键词模糊检索：命中书名任意子串
+  assert.equal((await call('/books?keyword=高等数学')).data.total, 2);
+  assert.equal((await call('/books?keyword=辅导')).data.total, 1);
+  assert.equal((await call('/books?keyword=不存在')).data.total, 0);
+  // 课程 + 关键词组合
+  assert.equal((await call('/books?keyword=辅导&course_id=1')).data.total, 1);
+  // 价格排序：低到高 / 高到低
+  r = await call('/books?sort=price_asc&course_id=1');
+  assert.deepEqual(r.data.items.map(b => b.book_id), [gaoshuB.book_id, gaoshuA.book_id]);
+  r = await call('/books?sort=price_desc&course_id=1');
+  assert.deepEqual(r.data.items.map(b => b.book_id), [gaoshuA.book_id, gaoshuB.book_id]);
+  // 默认按最新发布（同秒时按书 ID 倒序）
+  r = await call('/books');
+  assert.equal(r.data.items[0].book_id, xianxing.book_id);
+
+  // 详情页：展示卖家名与卖家微信号，收藏状态默认未收藏
+  const detail = (await call(`/books/${gaoshuA.book_id}`, { token: buyer.token })).data;
+  assert.equal(detail.seller_name, 'alice');
+  assert.equal(detail.seller_wechat, 'wx_alice');
+  assert.equal(detail.collected, false);
+  // 收藏真实可用：加入 → 详情与书市列表都反映 collected → 取消
+  assert.equal((await call(`/books/${gaoshuA.book_id}/collect`, { method: 'POST', token: buyer.token })).data.collected, true);
+  assert.equal((await call(`/books/${gaoshuA.book_id}`, { token: buyer.token })).data.collected, true);
+  assert.equal((await call('/books?keyword=高等数学', { token: buyer.token })).data.items.find(b => b.book_id === gaoshuA.book_id).collected, true);
+  assert.equal((await call(`/books/${gaoshuA.book_id}/collect`, { method: 'POST', token: buyer.token })).data.collected, false);
+  assert.equal((await call(`/books/${gaoshuA.book_id}`, { token: buyer.token })).data.collected, false);
+  // 收藏需登录
+  assert.equal((await call(`/books/${gaoshuA.book_id}/collect`, { method: 'POST' })).status, 401);
+  db.sql.close();
+});
 test('认证限流及缺失数据库提示', async () => {
   const db = database(); const call = client(db);
   for (let i = 0; i < 20; i++) await call('/auth/login', { method: 'POST', body: {} });
