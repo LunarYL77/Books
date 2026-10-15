@@ -84,6 +84,13 @@
         window.scrollTo(0, 0);
       }
 
+      /* 首页快捷搜索：把关键词带到书市 */
+      const homeKw = ref('');
+      function goSearch() {
+        mk.keyword = homeKw.value.trim();
+        go('market');
+      }
+
       function saveSession(token, u) {
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(u));
@@ -460,6 +467,7 @@
         ordersState, loadOrders, switchOrders, orderTagType, cancelOrder, confirmOrder, placeOrder,
         formatPrice,
         go, doLogin, doRegister, logout,
+        homeKw, goSearch,
       };
     },
   });

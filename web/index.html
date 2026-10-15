@@ -34,6 +34,25 @@ a{color:var(--brand)}
 .hero h1{margin:0 0 10px;font-size:30px;letter-spacing:.5px}
 .hero-sub{color:var(--mut);margin:0 0 22px}
 .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+/* 首页快捷入口 */
+.home-nav{margin-top:6px}
+.home-search{display:flex;gap:10px;max-width:560px;margin:0 auto 20px}
+.home-search .el-input{flex:1}
+.home-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.htab{background:var(--surf);border:1px solid var(--bord);border-radius:14px;padding:18px 12px 15px;text-align:center;cursor:pointer;
+  transition:transform .18s cubic-bezier(.2,.7,.3,1.2), box-shadow .18s ease, border-color .18s ease}
+.htab:hover{transform:translateY(-6px) scale(1.045);box-shadow:0 12px 26px rgba(23,138,76,.16);border-color:var(--brand)}
+.htab:active{transform:translateY(-2px) scale(1.01)}
+.htab-ic{width:44px;height:44px;margin:0 auto 9px;border-radius:12px;background:var(--brand-soft);color:var(--brand);
+  display:flex;align-items:center;justify-content:center;transition:transform .2s ease, background .2s ease, color .2s ease}
+.htab:hover .htab-ic{transform:scale(1.16) rotate(-5deg);background:var(--brand);color:#fff}
+.htab b{display:block;font-size:15px}
+.htab span{font-size:12px;color:var(--mut)}
+.htab-primary{background:linear-gradient(160deg,var(--brand),#0f6b3a);border-color:transparent}
+.htab-primary b{color:#fff}
+.htab-primary span{color:rgba(255,255,255,.82)}
+.htab-primary .htab-ic{background:rgba(255,255,255,.22);color:#fff}
+.htab-primary:hover{box-shadow:0 12px 28px rgba(23,138,76,.36)}
 .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
 .flow-step{background:var(--surf);border:1px solid var(--bord);border-radius:13px;padding:16px;text-align:center}
 .fic{width:38px;height:38px;margin:0 auto 8px;border-radius:11px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
@@ -106,6 +125,8 @@ a{color:var(--brand)}
 @media (max-width:760px){
   .flow{grid-template-columns:repeat(2,1fr)}
   .grid2{grid-template-columns:1fr}
+  .home-tabs{grid-template-columns:repeat(2,1fr)}
+  .home-search{flex-direction:column}
   .b-sub{display:none}
   .hero{padding:32px 20px}
   .hero h1{font-size:24px}
@@ -147,19 +168,38 @@ a{color:var(--brand)}
       <template v-if="!user">
         <h1>让闲置教材，流转到下一届同学手中</h1>
         <p class="hero-sub">面向本校学生的二手教材教辅信息撮合平台 · 微信议价 · 校园面交 · 线下钱款交割</p>
-        <div class="hero-cta">
-          <el-button type="primary" size="large" @click="go('register')">免费注册，开始使用</el-button>
-          <el-button size="large" @click="go('market')">先去书市逛逛</el-button>
-        </div>
       </template>
       <template v-else>
         <h1>你好，{{ user.username }}</h1>
         <p class="hero-sub">学期末有闲置教材？挂上书市，让下一届同学接手。</p>
-        <div class="hero-cta">
-          <el-button type="primary" size="large" @click="go('publish')">发布教材</el-button>
-          <el-button size="large" @click="go('mybooks')">管理我的发布</el-button>
-        </div>
       </template>
+
+      <div class="home-nav">
+        <div class="home-search">
+          <el-input v-model="homeKw" size="large" placeholder="搜索教材书名，如：高等数学 / 线代" clearable @keyup.enter="goSearch">
+            <template #prefix><el-icon><search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" size="large" @click="goSearch">搜索</el-button>
+        </div>
+        <div class="home-tabs">
+          <div class="htab" @click="go('market')">
+            <div class="htab-ic"><el-icon :size="22"><goods /></el-icon></div>
+            <b>书市</b><span>浏览全部在售教材</span>
+          </div>
+          <div class="htab" @click="go('orders')">
+            <div class="htab-ic"><el-icon :size="22"><list /></el-icon></div>
+            <b>我的订单</b><span>预约与面交跟踪</span>
+          </div>
+          <div class="htab" @click="go('mybooks')">
+            <div class="htab-ic"><el-icon :size="22"><edit-pen /></el-icon></div>
+            <b>我的发布</b><span>管理自己的在售书</span>
+          </div>
+          <div class="htab htab-primary" @click="go('publish')">
+            <div class="htab-ic"><el-icon :size="22"><circle-plus /></el-icon></div>
+            <b>发布教材</b><span>让闲置教材变现</span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="flow">
@@ -456,7 +496,7 @@ a{color:var(--brand)}
 
   <footer class="foot">
     <div class="foot-inner">
-      <span>书循环 · 本校大学生二手教材教辅交易平台（需求文档 v1.1）</span>
+      <span>书循环 · 本校大学生二手教材教辅交易平台</span>
       <span>校园教材流转 · 微信沟通 · 线下面交</span>
     </div>
   </footer>
@@ -465,7 +505,7 @@ a{color:var(--brand)}
 <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
 <script src="https://unpkg.com/element-plus@2.8.8/dist/index.full.min.js"></script>
 <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
-<script src="./js/config.js?v=4"></script>
+<script src="./js/config.js?v=5"></script>
 <script>
 if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue) {
   const notice = document.getElementById('startup-notice');
@@ -473,6 +513,6 @@ if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue) {
   notice.hidden = false;
 }
 </script>
-<script src="./js/app.js?v=4"></script>
+<script src="./js/app.js?v=5"></script>
 </body>
 </html>
