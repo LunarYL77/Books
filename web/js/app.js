@@ -506,6 +506,14 @@
       }
 
       function formatPrice(v) { return Number(v).toFixed(2); }
+      // D1 存的是 UTC "YYYY-MM-DD HH:MM:SS"，补 Z 后转本地时间显示
+      function fmtTime(s) {
+        if (!s) return '';
+        const d = new Date(s.replace(' ', 'T') + 'Z');
+        if (isNaN(d)) return s;
+        const p = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+      }
 
       onMounted(async () => {
         /* 刷新页面后校验本地令牌是否仍有效（会话保持） */
@@ -534,7 +542,7 @@
         ordersState, loadOrders, switchOrders, orderTagType, cancelOrder, confirmOrder, placeOrder,
         colState, colList, colError, loadCollects, removeCollect, openReport,
         adminState, adminList, adminError, loadAdmin, adminDelist, adminResolve,
-        formatPrice,
+        formatPrice, fmtTime,
         go, doLogin, doRegister, logout,
         homeKw, goSearch,
       };

@@ -362,7 +362,7 @@ a{color:var(--brand)}
             <span class="b-price">¥{{ formatPrice(b.price) }}</span>
             <span v-if="b.quality_desc">{{ b.quality_desc }}</span>
           </div>
-          <div class="b-meta"><span>发布于 {{ b.created_at }}</span></div>
+          <div class="b-meta"><span>发布于 {{ fmtTime(b.created_at) }}</span></div>
         </div>
         <div class="b-actions">
           <el-tag :type="b.status==='上架' ? 'success' : 'info'">{{ b.status }}</el-tag>
@@ -436,7 +436,7 @@ a{color:var(--brand)}
         <div class="d-price">¥{{ formatPrice(detail.book.price) }}</div>
         <div class="d-row">所属课程：<b>{{ detail.book.course_name }}</b></div>
         <div class="d-row">成色：<b>{{ detail.book.quality_desc || '卖家未填写' }}</b></div>
-        <div class="d-row">发布时间：{{ detail.book.created_at }}</div>
+        <div class="d-row">发布时间：{{ fmtTime(detail.book.created_at) }}</div>
         <el-tag v-if="detail.book.status==='下架'" type="info" style="margin-top:8px">已下架（仅自己可见）</el-tag>
 
         <div class="d-seller">
@@ -499,7 +499,7 @@ a{color:var(--brand)}
           <div class="b-meta">
             <span>{{ ordersState.role==='buyer' ? '卖家' : '买家' }}：{{ ordersState.role==='buyer' ? o.seller_name : o.buyer_name }}</span>
             <span v-if="ordersState.role==='seller' && o.order_status==='待面交'">微信：{{ o.buyer_wechat || '买家未填写' }}</span>
-            <span v-if="o.confirm_time">完成于 {{ o.confirm_time }}</span>
+            <span v-if="o.confirm_time">完成于 {{ fmtTime(o.confirm_time) }}</span>
           </div>
         </div>
         <div class="b-actions" v-if="ordersState.role==='buyer' && o.order_status==='待面交'">
@@ -565,7 +565,7 @@ a{color:var(--brand)}
             <el-tag v-if="r.book_status==='下架'" type="info" size="small">书已下架</el-tag>
           </div>
           <div class="b-meta"><span>举报原因：{{ r.content }}</span></div>
-          <div class="b-meta"><span>举报人：{{ r.reporter_name }}</span><span>{{ r.created_at }}</span></div>
+          <div class="b-meta"><span>举报人：{{ r.reporter_name }}</span><span>{{ fmtTime(r.created_at) }}</span></div>
         </div>
         <div class="b-actions">
           <el-button size="small" type="danger" plain @click="adminDelist(r)" :disabled="r.book_status==='下架'">下架此书</el-button>
@@ -594,6 +594,6 @@ if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue) {
   notice.hidden = false;
 }
 </script>
-<script src="./js/app.js?v=7"></script>
+<script src="./js/app.js?v=8"></script>
 </body>
 </html>
