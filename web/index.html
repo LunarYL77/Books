@@ -127,6 +127,7 @@ a{color:var(--brand)}
       <div class="nav-right">
         <el-button text @click="go('market')">书市</el-button>
         <template v-if="user">
+          <el-button text @click="go('orders')">我的订单</el-button>
           <el-button text @click="go('mybooks')">我的发布</el-button>
           <el-button type="primary" @click="go('publish')">发布教材</el-button>
           <span class="uchip"><span class="uava">{{ user.username.slice(0,1).toUpperCase() }}</span>{{ user.username }}</span>
@@ -400,6 +401,54 @@ a{color:var(--brand)}
           <el-button :type="detail.book.collected ? 'warning' : 'primary'" plain @click="toggleCollect">
             {{ detail.book.collected ? '★ 已收藏' : '☆ 收藏' }}
           </el-button>
+          <template v-if="detail.book.seller_id !== (user && user.user_id)">
+            <el-button v-if="detail.book.status==='上架' && detail.book.reserved_by_me" type="warning" plain @click="go('orders')">我的预约·待面交</el-button>
+            <el-button v-else-if="detail.book.status==='上架' && detail.book.reserved" type="info" disabled>已被预约</el-button>
+            <el-button v-else-if="detail.book.status==='上架'" type="primary" @click="placeOrder">我要预约</el-button>
+          </template>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 订单中心 -->
+  <main class="wrap" v-else-if="view==='orders'">
+    <div class="page-head">
+      <h2>我的订单</h2>
+    </div>
+    <el-radio-group v-model="ordersState.role" @change="switchOrders" style="margin-bottom:14px">
+      <el-radio-button value="buyer">我买到的</el-radio-button>
+      <el-radio-button value="seller">我卖出的</el-radio-button>
+    </el-radio-group>
+
+    <div v-if="ordersState.loading" class="state-box"><el-icon class="is-loading" :size="22"><loading></loading></el-icon>加载中…</div>
+    <div v-else-if="ordersState.error" class="state-box error" role="alert">
+      <span>{{ ordersState.error }}</span>
+      <el-button type="primary" plain @click="loadOrders">重试</el-button>
+    </div>
+    <div v-else-if="ordersState.list.length===0" class="state-box">
+      <span>{{ ordersState.role==='buyer' ? '你还没有预约过教材' : '还没有同学预约你的教材' }}</span>
+      <el-button type="primary" @click="go('market')">去书市逛逛</el-button>
+    </div>
+    <div v-else class="book-list">
+      <div class="book-card" v-for="o in ordersState.list" :key="o.order_id">
+        <img class="book-cover" :src="o.pic_url" :alt="o.book_name + ' 实拍图'">
+        <div class="b-info">
+          <div class="b-name">{{ o.book_name }}</div>
+          <div class="b-meta">
+            <span class="b-course">{{ o.course_name }}</span>
+            <span class="b-price">¥{{ formatPrice(o.price) }}</span>
+            <el-tag :type="orderTagType(o.order_status)" size="small">{{ o.order_status }}</el-tag>
+          </div>
+          <div class="b-meta">
+            <span>{{ ordersState.role==='buyer' ? '卖家' : '买家' }}：{{ ordersState.role==='buyer' ? o.seller_name : o.buyer_name }}</span>
+            <span v-if="ordersState.role==='seller' && o.order_status==='待面交'">微信：{{ o.buyer_wechat || '买家未填写' }}</span>
+            <span v-if="o.confirm_time">完成于 {{ o.confirm_time }}</span>
+          </div>
+        </div>
+        <div class="b-actions" v-if="ordersState.role==='buyer' && o.order_status==='待面交'">
+          <el-button size="small" type="success" plain @click="confirmOrder(o)">确认完成</el-button>
+          <el-button size="small" type="danger" plain @click="cancelOrder(o)">取消订单</el-button>
         </div>
       </div>
     </div>
@@ -416,7 +465,7 @@ a{color:var(--brand)}
 <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
 <script src="https://unpkg.com/element-plus@2.8.8/dist/index.full.min.js"></script>
 <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
-<script src="./js/config.js"></script>
+<script src="./js/config.js?v=4"></script>
 <script>
 if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue) {
   const notice = document.getElementById('startup-notice');
@@ -424,6 +473,6 @@ if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue) {
   notice.hidden = false;
 }
 </script>
-<script src="./js/app.js"></script>
+<script src="./js/app.js?v=4"></script>
 </body>
 </html>

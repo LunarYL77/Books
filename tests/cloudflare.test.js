@@ -141,6 +141,61 @@ test('模块3：书市浏览（课程筛选/模糊检索/价格排序）与详�
   assert.equal((await call(`/books/${gaoshuA.book_id}/collect`, { method: 'POST' })).status, 401);
   db.sql.close();
 });
+test('模块4：下单、订单中心、取消、确认完成（FR-ORDER-01~04）', async () => {
+  const db = database();
+  const call = client(db);
+  const register = username => call('/auth/register', { method: 'POST', body: { username, password: 'test-password', wechat: `wx_${username}` } });
+  const seller = (await register('shop')).data;
+  const buyer1 = (await register('buyer1')).data;
+  const buyer2 = (await register('buyer2')).data;
+  const bytes = new Uint8Array([137,80,78,71,13,10,26,10]);
+  const publish = async (name, price, courseId) => {
+    const form = new FormData();
+    for (const [k, v] of Object.entries({ book_name: name, price, course_id: courseId, quality_desc: '' })) form.set(k, v);
+    form.set('image', new Blob([bytes], { type: 'image/png' }), 'b.png');
+    return (await call('/books', { method: 'POST', body: form, token: seller.token })).data;
+  };
+  const book = await publish('大学物理教材', 18.0, 5);
+
+  // 未登录不能下单；卖家不能买自己的书
+  assert.equal((await call(`/books/${book.book_id}/order`, { method: 'POST' })).status, 401);
+  assert.equal((await call(`/books/${book.book_id}/order`, { method: 'POST', token: seller.token })).status, 400);
+  // buyer1 下单成功
+  let o = await call(`/books/${book.book_id}/order`, { method: 'POST', token: buyer1.token });
+  assert.equal(o.status, 200);
+  assert.equal(o.data.order_status, '待面交');
+  assert.equal(o.data.seller_name, 'shop');
+  assert.equal(o.data.buyer_name, 'buyer1');
+  const orderId = o.data.order_id;
+  // 同一本书只允许一个待面交订单（buyer2 / buyer1 重复下单都被拦）
+  assert.equal((await call(`/books/${book.book_id}/order`, { method: 'POST', token: buyer2.token })).status, 409);
+  assert.equal((await call(`/books/${book.book_id}/order`, { method: 'POST', token: buyer1.token })).status, 409);
+  assert.equal((await call('/books')).data.items[0].reserved, true);
+
+  // 订单中心：买家视角 / 卖家视角
+  assert.equal((await call('/orders', { token: buyer1.token })).data.length, 1);
+  const mySell = (await call('/orders?role=seller', { token: seller.token })).data;
+  assert.equal(mySell.length, 1);
+  assert.equal(mySell[0].buyer_name, 'buyer1');
+  assert.equal((await call('/orders', { token: buyer2.token })).data.length, 0);
+
+  // 非本人订单不能操作；buyer1 取消后该书可重新下单
+  assert.equal((await call(`/orders/${orderId}/cancel`, { method: 'POST', token: buyer2.token })).status, 403);
+  let c = await call(`/orders/${orderId}/cancel`, { method: 'POST', token: buyer1.token });
+  assert.equal(c.status, 200);
+  assert.equal(c.data.order_status, '已取消');
+  assert.equal((await call(`/orders/${orderId}/confirm`, { method: 'POST', token: buyer1.token })).status, 409);
+  // 取消后 buyer2 可重新下单并确认完成
+  o = await call(`/books/${book.book_id}/order`, { method: 'POST', token: buyer2.token });
+  assert.equal(o.status, 200);
+  const orderId2 = o.data.order_id;
+  let f = await call(`/orders/${orderId2}/confirm`, { method: 'POST', token: buyer2.token });
+  assert.equal(f.status, 200);
+  assert.equal(f.data.order_status, '已完成');
+  assert.ok(f.data.confirm_time);
+  assert.equal((await call(`/orders/${orderId2}/cancel`, { method: 'POST', token: buyer2.token })).status, 409);
+  db.sql.close();
+});
 test('认证限流及缺失数据库提示', async () => {
   const db = database(); const call = client(db);
   for (let i = 0; i < 20; i++) await call('/auth/login', { method: 'POST', body: {} });

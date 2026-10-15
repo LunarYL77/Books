@@ -3,7 +3,9 @@ const encoder = new TextEncoder();
 const MAX_IMAGE = 5 * 1024 * 1024;
 const CHUNK_SIZE = 256 * 1024;
 const BOOK_SELECT = `SELECT b.*, c.course_name, u.username AS seller_name,
-  u.wechat AS seller_wechat FROM book b JOIN course c USING(course_id)
+  u.wechat AS seller_wechat,
+  EXISTS(SELECT 1 FROM orders x WHERE x.book_id=b.book_id AND x.order_status='待面交') AS reserved
+  FROM book b JOIN course c USING(course_id)
   JOIN user u ON u.user_id = b.seller_id`;
 const fail = (status, message) => { throw Object.assign(new Error(message), { status }); };
 const json = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -80,7 +82,21 @@ async function getBook(db, id, user) {
   const book = await first(db, `${BOOK_SELECT} WHERE b.book_id=?`, id);
   if (!book || (book.status === '下架' && book.seller_id !== user?.user_id)) fail(404, '书籍不存在或已下架');
   book.collected = Boolean(user && await first(db, 'SELECT 1 FROM collect WHERE user_id=? AND book_id=?', user.user_id, id));
+  book.reserved_by_me = Boolean(user && book.reserved && await first(db,
+    "SELECT 1 FROM orders WHERE book_id=? AND buyer_id=? AND order_status='待面交'", id, user.user_id));
   return book;
+}
+// 订单详情（带书籍与买卖双方信息），供下单/取消/确认后回显
+async function getOrder(db, orderId) {
+  return first(db, `SELECT o.*, b.book_name, b.price, b.pic_url, b.status AS book_status, b.course_id,
+      c.course_name, su.username AS seller_name, su.wechat AS seller_wechat,
+      bu.username AS buyer_name, bu.wechat AS buyer_wechat
+    FROM orders o
+    JOIN book b ON b.book_id=o.book_id
+    JOIN course c USING(course_id)
+    JOIN user su ON su.user_id=o.seller_id
+    JOIN user bu ON bu.user_id=o.buyer_id
+    WHERE o.order_id=?`, orderId);
 }
 
 export async function onRequest({ request, env }) {
@@ -154,10 +170,11 @@ export async function onRequest({ request, env }) {
       const sort = { time_desc: 'b.created_at DESC,b.book_id DESC', price_asc: 'b.price ASC,b.book_id DESC', price_desc: 'b.price DESC,b.book_id DESC' }[url.searchParams.get('sort')] || 'b.created_at DESC,b.book_id DESC';
       const total = await first(db, `SELECT count(*) AS total FROM book b WHERE ${where}`, ...args);
       const items = await all(db, `SELECT b.*,c.course_name,u.username AS seller_name,
-        EXISTS(SELECT 1 FROM collect x WHERE x.book_id=b.book_id AND x.user_id=?) AS collected
+        EXISTS(SELECT 1 FROM collect x WHERE x.book_id=b.book_id AND x.user_id=?) AS collected,
+        EXISTS(SELECT 1 FROM orders x WHERE x.book_id=b.book_id AND x.order_status='待面交') AS reserved
         FROM book b JOIN course c USING(course_id) JOIN user u ON u.user_id=b.seller_id
         WHERE ${where} ORDER BY ${sort} LIMIT 200`, user?.user_id || 0, ...args);
-      return json({ total: total.total, items: items.map(b => ({ ...b, collected: Boolean(b.collected) })) });
+      return json({ total: total.total, items: items.map(b => ({ ...b, collected: Boolean(b.collected), reserved: Boolean(b.reserved) })) });
     }
     if (path === '/books' && method === 'POST') {
       const user = await currentUser(db, request);
@@ -184,7 +201,39 @@ export async function onRequest({ request, env }) {
       const results = await db.batch(statements);
       return json(await getBook(db, results.at(-1).meta.last_row_id, user));
     }
-    const match = path.match(/^\/books\/(\d+)(?:\/(collect|delist|relist))?$/);
+    // 我的订单中心：role=buyer（默认）我买到的；role=seller 我卖出的
+    if (path === '/orders' && method === 'GET') {
+      const user = await currentUser(db, request);
+      const cond = url.searchParams.get('role') === 'seller' ? 'o.seller_id=?' : 'o.buyer_id=?';
+      return json(await all(db, `SELECT o.*, b.book_name, b.price, b.pic_url, b.status AS book_status, b.course_id,
+          c.course_name, su.username AS seller_name, su.wechat AS seller_wechat,
+          bu.username AS buyer_name, bu.wechat AS buyer_wechat
+        FROM orders o
+        JOIN book b ON b.book_id=o.book_id
+        JOIN course c USING(course_id)
+        JOIN user su ON su.user_id=o.seller_id
+        JOIN user bu ON bu.user_id=o.buyer_id
+        WHERE ${cond} ORDER BY o.create_time DESC, o.order_id DESC`, user.user_id));
+    }
+    // 订单动作：买家取消 / 买家确认完成（均要求订单当前为待面交）
+    const orderMatch = path.match(/^\/orders\/(\d+)\/(cancel|confirm)$/);
+    if (orderMatch && method === 'POST') {
+      const user = await currentUser(db, request);
+      const oid = Number(orderMatch[1]);
+      const order = await first(db, 'SELECT * FROM orders WHERE order_id=?', oid);
+      if (!order) fail(404, '订单不存在');
+      if (order.buyer_id !== user.user_id) fail(403, '只能操作自己的订单');
+      if (order.order_status !== '待面交') fail(409, '订单已结束，不能再操作');
+      if (orderMatch[2] === 'cancel') {
+        const r = await run(db, "UPDATE orders SET order_status='已取消' WHERE order_id=? AND order_status='待面交'", oid);
+        if (!r.meta.changes) fail(409, '订单状态已变更，请刷新');
+      } else {
+        const r = await run(db, "UPDATE orders SET order_status='已完成', confirm_time=CURRENT_TIMESTAMP WHERE order_id=? AND order_status='待面交'", oid);
+        if (!r.meta.changes) fail(409, '订单状态已变更，请刷新');
+      }
+      return json(await getOrder(db, oid));
+    }
+    const match = path.match(/^\/books\/(\d+)(?:\/(collect|order|delist|relist))?$/);
     if (match) {
       const id = Number(match[1]);
       const action = match[2];
@@ -201,6 +250,23 @@ export async function onRequest({ request, env }) {
           ]);
           const collected = results[0].results[0].created_at !== '__remove__';
           return json({ collected });
+        }
+        if (action === 'order') {
+          // 买家下单登记：不能买自己的书；下架书不可下单；同一本书只允许一个待面交订单
+          const book = await first(db, `${BOOK_SELECT} WHERE b.book_id=?`, id);
+          if (!book || (book.status === '下架' && book.seller_id !== user.user_id)) fail(404, '书籍不存在或已下架');
+          if (book.status === '下架') fail(400, '该书已下架，无法预约');
+          if (book.seller_id === user.user_id) fail(400, '不能预约自己发布的书');
+          const pending = await first(db, "SELECT order_id AS n FROM orders WHERE book_id=? AND order_status='待面交'", id);
+          if (pending) fail(409, '该书已被其他同学预约，换一本或等对方取消');
+          let orderId;
+          try {
+            const result = await run(db, 'INSERT INTO orders(buyer_id,seller_id,book_id) VALUES(?,?,?)', user.user_id, book.seller_id, id);
+            orderId = result.meta.last_row_id;
+          } catch (e) {
+            fail(409, '该书已被其他同学预约，换一本或等对方取消');
+          }
+          return json(await getOrder(db, orderId));
         }
         const book = await first(db, 'SELECT * FROM book WHERE book_id=?', id);
         if (!book) fail(404, '书籍不存在');

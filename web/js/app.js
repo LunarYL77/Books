@@ -80,6 +80,7 @@
         if (v === 'publish') loadCourses();
         if (v === 'mybooks') loadMyBooks();
         if (v === 'market') loadMarket();
+        if (v === 'orders') loadOrders();
         window.scrollTo(0, 0);
       }
 
@@ -251,6 +252,74 @@
         }
       }
 
+      /* ---------- 下单与订单中心（FR-ORDER-01~04） ---------- */
+      async function placeOrder() {
+        if (!user.value) {
+          ElMessageBox.confirm('下单需要先登录，现在去登录吗？', '提示', {
+            confirmButtonText: '去登录', cancelButtonText: '取消', type: 'info',
+          }).then(function () { go('login'); }).catch(function () { /* 取消 */ });
+          return;
+        }
+        const b = detail.book;
+        if (!b) return;
+        try {
+          await ElMessageBox.confirm(
+            '确认预约《' + b.book_name + '》？\n价格 ¥' + formatPrice(b.price) + '。线下面交、钱款当面结清，平台不代收；取消后会释放预约名额。',
+            '交易确认', { confirmButtonText: '确认预约', cancelButtonText: '再想想', type: 'warning' }
+          );
+        } catch { return; }
+        try {
+          await api('/books/' + b.book_id + '/order', { method: 'POST' });
+          ElMessage.success('预约成功，请加卖家微信约定面交');
+          go('orders');
+        } catch (e) {
+          ElMessage.error(e.message);
+        }
+      }
+
+      const ordersState = reactive({ role: 'buyer', list: [], loading: false, error: '' });
+      async function loadOrders() {
+        ordersState.loading = true;
+        ordersState.error = '';
+        try {
+          ordersState.list = await api('/orders?role=' + ordersState.role);
+        } catch (e) {
+          ordersState.error = e.message;
+        } finally {
+          ordersState.loading = false;
+        }
+      }
+      function switchOrders(role) { ordersState.role = role; loadOrders(); }
+      function orderTagType(s) {
+        return s === '待面交' ? 'warning' : s === '已完成' ? 'success' : 'info';
+      }
+      async function cancelOrder(o) {
+        try {
+          await ElMessageBox.confirm(
+            '取消后《' + o.book_name + '》将释放预约名额。确认取消该订单？',
+            '取消订单', { type: 'warning', confirmButtonText: '确认取消', cancelButtonText: '再想想' }
+          );
+        } catch { return; }
+        try {
+          await api('/orders/' + o.order_id + '/cancel', { method: 'POST' });
+          ElMessage.success('已取消');
+          loadOrders();
+        } catch (e) { ElMessage.error(e.message); }
+      }
+      async function confirmOrder(o) {
+        try {
+          await ElMessageBox.confirm(
+            '确认已当面验书付款并收到《' + o.book_name + '》？确认后订单完成，不可撤销。',
+            '确认完成', { type: 'warning', confirmButtonText: '确认完成', cancelButtonText: '再想想' }
+          );
+        } catch { return; }
+        try {
+          await api('/orders/' + o.order_id + '/confirm', { method: 'POST' });
+          ElMessage.success('订单已完成');
+          loadOrders();
+        } catch (e) { ElMessage.error(e.message); }
+      }
+
       /* ---------- 发布教材 ---------- */
       const pub = reactive({ book_name: '', course_id: null, price: null, quality_desc: '', file: null, loading: false });
       const pubFiles = ref([]);
@@ -388,6 +457,7 @@
         myBooks, myState, myError, loadMyBooks, delistBook, relistBook,
         mk, mkBooks, mkTotal, mkState, mkError, loadMarket, setCourse, searchBooks,
         detail, openDetail, backToMarket, copyWechat, toggleCollect,
+        ordersState, loadOrders, switchOrders, orderTagType, cancelOrder, confirmOrder, placeOrder,
         formatPrice,
         go, doLogin, doRegister, logout,
       };
