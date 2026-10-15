@@ -5,6 +5,5 @@ compatibility_date = "2026-10-15"
 [[d1_databases]]
 binding = "DB"
 database_name = "campus-books"
-# 创建 D1 后，将这里替换为真实 database_id。
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "4b184433-b969-4c86-bc5f-4a611c78eed7"
 migrations_dir = "migrations"
