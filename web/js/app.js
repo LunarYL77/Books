@@ -81,6 +81,8 @@
         if (v === 'mybooks') loadMyBooks();
         if (v === 'market') loadMarket();
         if (v === 'orders') loadOrders();
+        if (v === 'collects') loadCollects();
+        if (v === 'admin') loadAdmin();
         window.scrollTo(0, 0);
       }
 
@@ -327,6 +329,71 @@
         } catch (e) { ElMessage.error(e.message); }
       }
 
+      /* ---------- 我的收藏 ---------- */
+      const colState = ref('idle');
+      const colList = ref([]);
+      const colError = ref('');
+      async function loadCollects() {
+        colState.value = 'loading'; colError.value = '';
+        try {
+          colList.value = await api('/collects');
+          colState.value = 'done';
+        } catch (e) { colError.value = e.message; colState.value = 'error'; }
+      }
+      async function removeCollect(b) {
+        try {
+          await api('/books/' + b.book_id + '/collect', { method: 'POST' });
+          ElMessage.success('已取消收藏');
+          loadCollects();
+        } catch (e) { ElMessage.error(e.message); }
+      }
+
+      /* ---------- 举报 ---------- */
+      const REPORT_REASONS = ['违规商品', '虚假信息/盗版', '色情广告/骚扰', '其他'];
+      async function openReport() {
+        const b = detail.book; if (!b) return;
+        try {
+          const { value: reason } = await ElMessageBox.prompt(
+            '请选择举报原因（违规商品 / 虚假信息/盗版 / 色情广告/骚扰 / 其他），可直接输入具体说明：',
+            '举报《' + b.book_name + '》',
+            {
+              confirmButtonText: '提交举报', cancelButtonText: '取消', inputType: 'text',
+              inputPlaceholder: '如：违规商品',
+              inputValidator: v => (v && v.trim().length >= 1) || '请填写举报原因',
+            }
+          );
+          await api('/books/' + b.book_id + '/report', { method: 'POST', body: { content: reason.trim() } });
+          ElMessage.success('举报已提交，管理员会尽快处理');
+        } catch (e) { if (e !== 'cancel') ElMessage.error(e.message); }
+      }
+
+      /* ---------- 管理员后台 ---------- */
+      const adminState = ref('idle');
+      const adminList = ref([]);
+      const adminError = ref('');
+      async function loadAdmin() {
+        adminState.value = 'loading'; adminError.value = '';
+        try {
+          adminList.value = await api('/admin/reports');
+          adminState.value = 'done';
+        } catch (e) { adminError.value = e.message; adminState.value = 'error'; }
+      }
+      async function adminDelist(r) {
+        try {
+          await ElMessageBox.confirm('确认下架《' + r.book_name + '》？下架后买家将看不到这本书。', '管理员操作', { type: 'warning', confirmButtonText: '确认下架', cancelButtonText: '取消' });
+        } catch { return; }
+        try {
+          await api('/admin/books/' + r.book_id + '/delist', { method: 'POST' });
+          ElMessage.success('已下架'); loadAdmin();
+        } catch (e) { ElMessage.error(e.message); }
+      }
+      async function adminResolve(r) {
+        try {
+          await api('/admin/reports/' + r.report_id + '/resolve', { method: 'POST' });
+          ElMessage.success('已标记为已处理'); loadAdmin();
+        } catch (e) { ElMessage.error(e.message); }
+      }
+
       /* ---------- 发布教材 ---------- */
       const pub = reactive({ book_name: '', course_id: null, price: null, quality_desc: '', file: null, loading: false });
       const pubFiles = ref([]);
@@ -465,6 +532,8 @@
         mk, mkBooks, mkTotal, mkState, mkError, loadMarket, setCourse, searchBooks,
         detail, openDetail, backToMarket, copyWechat, toggleCollect,
         ordersState, loadOrders, switchOrders, orderTagType, cancelOrder, confirmOrder, placeOrder,
+        colState, colList, colError, loadCollects, removeCollect, openReport,
+        adminState, adminList, adminError, loadAdmin, adminDelist, adminResolve,
         formatPrice,
         go, doLogin, doRegister, logout,
         homeKw, goSearch,

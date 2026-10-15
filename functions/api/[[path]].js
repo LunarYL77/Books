@@ -44,6 +44,11 @@ async function currentUser(db, request, required = true) {
   if (!user && required) fail(401, '未登录或登录已过期');
   return user;
 }
+async function requireAdmin(db, request) {
+  const user = await currentUser(db, request);
+  if (!user.is_admin) fail(403, '仅管理员可访问');
+  return user;
+}
 async function bodyJson(request) {
   if (Number(request.headers.get('Content-Length') || 0) > 8192) fail(413, '请求内容过大');
   const text = await request.text();
@@ -246,7 +251,37 @@ export async function onRequest({ request, env }) {
       }
       return json(await getOrder(db, oid));
     }
-    const match = path.match(/^\/books\/(\d+)(?:\/(collect|order|delist|relist))?$/);
+    // 我的收藏列表
+    if (path === '/collects' && method === 'GET') {
+      const user = await currentUser(db, request);
+      return json(await all(db, `${BOOK_SELECT} JOIN collect cl ON cl.book_id=b.book_id
+        WHERE cl.user_id=? ORDER BY cl.created_at DESC, cl.collect_id DESC`, user.user_id));
+    }
+    // 管理员：举报列表 / 处理举报 / 强制下架
+    if (path === '/admin/reports' && method === 'GET') {
+      await requireAdmin(db, request);
+      return json(await all(db, `SELECT r.report_id, r.book_id, r.content, r.handle_status, r.created_at, r.handled_at,
+          b.book_name, b.price, b.status AS book_status, b.pic_url, b.seller_id,
+          u.username AS reporter_name
+        FROM report r JOIN book b ON b.book_id=r.book_id
+        JOIN user u ON u.user_id=r.report_user_id
+        ORDER BY CASE r.handle_status WHEN '待处理' THEN 0 ELSE 1 END, r.created_at DESC, r.report_id DESC`));
+    }
+    const adminResolve = path.match(/^\/admin\/reports\/(\d+)\/resolve$/);
+    if (adminResolve && method === 'POST') {
+      await requireAdmin(db, request);
+      const r = await run(db, "UPDATE report SET handle_status='已处理', handled_at=CURRENT_TIMESTAMP WHERE report_id=?", Number(adminResolve[1]));
+      if (!r.meta.changes) fail(404, '举报不存在');
+      return json({ ok: true });
+    }
+    const adminDelist = path.match(/^\/admin\/books\/(\d+)\/delist$/);
+    if (adminDelist && method === 'POST') {
+      await requireAdmin(db, request);
+      const r = await run(db, "UPDATE book SET status='下架' WHERE book_id=?", Number(adminDelist[1]));
+      if (!r.meta.changes) fail(404, '书籍不存在');
+      return json({ ok: true, book_id: Number(adminDelist[1]), status: '下架' });
+    }
+    const match = path.match(/^\/books\/(\d+)(?:\/(collect|order|delist|relist|report))?$/);
     if (match) {
       const id = Number(match[1]);
       const action = match[2];
@@ -281,6 +316,16 @@ export async function onRequest({ request, env }) {
             fail(409, '该书已被其他同学预约，换一本或等对方取消');
           }
           return json(await getOrder(db, orderId));
+        }
+        if (action === 'report') {
+          const user = await currentUser(db, request);
+          await rateLimit(db, request, 'report', 10, 60);
+          const body = await bodyJson(request);
+          const content = textField(body.content || '', 1, 200, '举报原因');
+          const book = await first(db, 'SELECT book_id FROM book WHERE book_id=?', id);
+          if (!book) fail(404, '书籍不存在');
+          await run(db, 'INSERT INTO report(book_id, report_user_id, content) VALUES(?,?,?)', id, user.user_id, content);
+          return json({ ok: true });
         }
         const book = await first(db, 'SELECT * FROM book WHERE book_id=?', id);
         if (!book) fail(404, '书籍不存在');
