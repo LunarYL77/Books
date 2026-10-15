@@ -78,6 +78,18 @@ async function throttle(db, request) {
   ]);
   if (results[2].results[0].attempts > 20) fail(429, '尝试过于频繁，请 10 分钟后再试');
 }
+// 通用写操作限流：按 IP + 操作维度分桶，windowSec 秒内超过 max 次则 429
+async function rateLimit(db, request, scope, max = 30, windowSec = 60) {
+  const now = Math.floor(Date.now() / 1000);
+  const ip = request.headers.get('CF-Connecting-IP') || 'local';
+  const bucket = await tokenHash(`${ip}:${scope}:${Math.floor(now / windowSec)}`);
+  const results = await db.batch([
+    stmt(db, 'DELETE FROM auth_attempt WHERE expires_at <= ?', now),
+    stmt(db, `INSERT INTO auth_attempt(bucket,attempts,expires_at) VALUES(?,1,?)
+      ON CONFLICT(bucket) DO UPDATE SET attempts=attempts+1 RETURNING attempts`, bucket, now + windowSec),
+  ]);
+  if (results[1].results[0].attempts > max) fail(429, '操作过于频繁，请稍后再试');
+}
 async function getBook(db, id, user) {
   const book = await first(db, `${BOOK_SELECT} WHERE b.book_id=?`, id);
   if (!book || (book.status === '下架' && book.seller_id !== user?.user_id)) fail(404, '书籍不存在或已下架');
@@ -178,6 +190,7 @@ export async function onRequest({ request, env }) {
     }
     if (path === '/books' && method === 'POST') {
       const user = await currentUser(db, request);
+      await rateLimit(db, request, 'publish', 20, 60);
       if (Number(request.headers.get('Content-Length') || 0) > MAX_IMAGE + 65536) fail(413, '图片不能超过 5MB');
       let form;
       try { form = await request.formData(); } catch { fail(400, '请提交教材表单与图片'); }
@@ -253,6 +266,7 @@ export async function onRequest({ request, env }) {
         }
         if (action === 'order') {
           // 买家下单登记：不能买自己的书；下架书不可下单；同一本书只允许一个待面交订单
+          await rateLimit(db, request, 'order', 20, 60);
           const book = await first(db, `${BOOK_SELECT} WHERE b.book_id=?`, id);
           if (!book || (book.status === '下架' && book.seller_id !== user.user_id)) fail(404, '书籍不存在或已下架');
           if (book.status === '下架') fail(400, '该书已下架，无法预约');
