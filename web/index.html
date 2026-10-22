@@ -16,7 +16,11 @@
 }
 *{box-sizing:border-box}
 [v-cloak]{display:none}
+html,body{height:100%}
 body{margin:0;font-family:system-ui,"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
+/* 粘性页脚：#app 作为 flex 列容器，main 撑满剩余空间，footer 自然贴底 */
+#app{display:flex;flex-direction:column;min-height:100vh}
+#app>main{flex:1}
 a{color:var(--brand)}
 .wrap{max-width:1020px;margin:0 auto;padding:0 20px}
 /* 顶部导航 */
@@ -586,14 +590,15 @@ a{color:var(--brand)}
 <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
 <script src="https://unpkg.com/element-plus@2.8.8/dist/index.full.min.js"></script>
 <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+<script src="https://unpkg.com/vue-router@4.4.5/dist/vue-router.global.prod.js"></script>
 <script src="./js/config.js?v=5"></script>
 <script>
-if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue) {
+if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue || !window.VueRouter) {
   const notice = document.getElementById('startup-notice');
   notice.textContent = '前端依赖加载失败，请检查网络后刷新页面。';
   notice.hidden = false;
 }
 </script>
-<script src="./js/app.js?v=8"></script>
+<script src="./js/app.js?v=9"></script>
 </body>
 </html>

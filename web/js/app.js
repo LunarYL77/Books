@@ -2,11 +2,12 @@
 (function () {
   'use strict';
 
-  if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue) return;
+  if (!window.Vue || !window.ElementPlus || !window.ElementPlusIconsVue || !window.VueRouter) return;
 
   const apiBase = (window.APP_CONFIG && window.APP_CONFIG.apiBase || '').replace(/\/+$/, '');
-  const { createApp, onMounted, reactive, ref } = Vue;
+  const { createApp, computed, onMounted, reactive, ref, watch } = Vue;
   const { ElMessage, ElMessageBox } = ElementPlus;
+  const { createRouter, createWebHistory } = VueRouter;
 
   /** 统一 API 请求封装：自动带令牌、统一错误文案（网络失败 / 401 / 服务端 detail） */
   async function api(path, options) {
@@ -54,9 +55,28 @@
   const OK_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
   const MAX_IMAGE_MB = 5;
 
+  /* ---------- Vue Router（history 模式） ---------- */
+  const router = createRouter({
+    history: createWebHistory(),
+    routes: [
+      { path: '/', name: 'home' },
+      { path: '/market', name: 'market' },
+      { path: '/book/:id', name: 'detail' },
+      { path: '/orders', name: 'orders' },
+      { path: '/collects', name: 'collects' },
+      { path: '/mybooks', name: 'mybooks' },
+      { path: '/publish', name: 'publish' },
+      { path: '/login', name: 'login' },
+      { path: '/register', name: 'register' },
+      { path: '/admin', name: 'admin' },
+      { path: '/:pathMatch(.*)*', redirect: '/' },
+    ],
+  });
+
   const app = createApp({
     setup() {
-      const view = ref('home');
+      const route = router.currentRoute;
+      const view = computed(() => route.value.name);
       const user = ref(null);
       try { user.value = JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { /* 忽略损坏缓存 */ }
 
@@ -76,14 +96,7 @@
           ElMessage.info('请先登录');
           v = 'login';
         }
-        view.value = v;
-        if (v === 'publish') loadCourses();
-        if (v === 'mybooks') loadMyBooks();
-        if (v === 'market') loadMarket();
-        if (v === 'orders') loadOrders();
-        if (v === 'collects') loadCollects();
-        if (v === 'admin') loadAdmin();
-        window.scrollTo(0, 0);
+        router.push({ name: v });
       }
 
       /* 首页快捷搜索：把关键词带到书市 */
@@ -213,10 +226,9 @@
       /* ---------- 教材详情（FR-BOOK-04） ---------- */
       const detail = reactive({ book: null, state: 'loading', error: '' });
 
-      async function openDetail(id) {
+      async function loadDetail(id) {
         detail.book = null;
         detail.state = 'loading';
-        view.value = 'detail';
         window.scrollTo(0, 0);
         try {
           detail.book = await api('/books/' + id);
@@ -227,9 +239,12 @@
         }
       }
 
+      function openDetail(id) {
+        router.push({ name: 'detail', params: { id: String(id) } });
+      }
+
       function backToMarket() {
-        view.value = 'market';
-        window.scrollTo(0, 0);
+        router.push({ name: 'market' });
       }
 
       function copyWechat() {
@@ -515,6 +530,18 @@
         return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
       }
 
+      /* 路由变化时按需加载对应页面数据（含首次进入页面） */
+      watch(() => [route.value.name, route.value.params.id], ([name, id]) => {
+        if (name === 'publish') loadCourses();
+        if (name === 'mybooks') loadMyBooks();
+        if (name === 'market') loadMarket();
+        if (name === 'orders') loadOrders();
+        if (name === 'collects') loadCollects();
+        if (name === 'admin') loadAdmin();
+        if (name === 'detail' && id) loadDetail(id);
+        window.scrollTo(0, 0);
+      }, { immediate: true });
+
       onMounted(async () => {
         /* 刷新页面后校验本地令牌是否仍有效（会话保持） */
         if (localStorage.getItem('token')) {
@@ -550,6 +577,7 @@
   });
 
   app.use(ElementPlus);
+  app.use(router);
   Object.entries(ElementPlusIconsVue).forEach(function (entry) {
     app.component(entry[0], entry[1]);
   });
